@@ -4,7 +4,7 @@ This repository contains a collection of CMake scripts to help you embed
 Google's native WebRTC implementation inside your project as simple as this:
 
 ```cmake
-cmake_minimum_required(VERSION 3.3)
+cmake_minimum_required(VERSION 3.5)
 project(sample)
 
 find_package(LibWebRTC REQUIRED)

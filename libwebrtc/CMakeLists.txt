@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.5)
 project(libwebrtc)
 
 set(_OBJ_EXT ${CMAKE_CXX_OUTPUT_EXTENSION})

@@ -1,9 +1,9 @@
-cmake_minimum_required(VERSION 3.3)
+cmake_minimum_required(VERSION 3.5)
 project(webrtc)
 
 find_package(Git REQUIRED)
 if (WIN32)
-  set(PYTHON_EXECUTABLE ${DEPOT_TOOLS_PATH}/python.bat)
+  set(PYTHON_EXECUTABLE ${DEPOT_TOOLS_PATH}/python3.bat)
 else (WIN32)
   find_package(PythonInterp 2.7 REQUIRED)
 endif (WIN32)
@@ -55,7 +55,7 @@ include(LibWebRTCCommand)
 
 libwebrtc_command(
     NAME webrtc-sync
-    COMMAND ${GCLIENT_EXECUTABLE} sync --nohooks
+    COMMAND ${GCLIENT_EXECUTABLE} sync
     WORKING_DIRECTORY "${WEBRTC_PARENT_DIR}"
     COMMENT "Synchronizing WebRTC"
 )
@@ -80,7 +80,7 @@ if (UNIX AND NOT APPLE)
 
   libwebrtc_command(
       NAME webrtc-toolchain
-      COMMAND ${PYTHON_EXECUTABLE} ${WEBRTC_PARENT_DIR}/src/build/linux/sysroot_scripts/install-sysroot.py --arch=${SYSROOT_ARCH} --running-as-hook
+      COMMAND ${PYTHON_EXECUTABLE} ${WEBRTC_PARENT_DIR}/src/build/linux/sysroot_scripts/install-sysroot.py --arch=${SYSROOT_ARCH}
       WORKING_DIRECTORY "${WEBRTC_PARENT_DIR}"
       COMMENT "Retrieving sysroot"
       DEPENDS webrtc-sync
@@ -108,32 +108,6 @@ elseif (WIN32)
   set(_SCRIPT_SUFFIX .bat)
 endif (UNIX AND NOT APPLE)
 
-set(_GN_COMMAND download_from_google_storage${_SCRIPT_SUFFIX} --no_resume --platform=${_PLATFORM}
-    --no_auth --bucket chromium-gn
-    -s src/buildtools/${_FOLDER}/gn${_SUFFIX}.sha1)
-
-libwebrtc_command(
-    NAME webrtc-gn
-    COMMAND ${_GN_COMMAND}
-    WORKING_DIRECTORY "${WEBRTC_PARENT_DIR}"
-    COMMENT "Fetching gn${_SUFFIX} for ${_PLATFORM}"
-    DEPENDS webrtc-sync
-)
-set(_DEPENDENCIES ${_DEPENDENCIES} webrtc-gn)
-
-set(_CLANG_FORMAT_COMMAND download_from_google_storage${_SCRIPT_SUFFIX} --no_resume
-    --platform=${_PLATFORM} --no_auth --bucket chromium-clang-format
-    -s src/buildtools/${_FOLDER}/clang-format${_SUFFIX}.sha1)
-
-libwebrtc_command(
-    NAME webrtc-clang-format
-    COMMAND ${_CLANG_FORMAT_COMMAND}
-    WORKING_DIRECTORY "${WEBRTC_PARENT_DIR}"
-    COMMENT "Fetching clang-format${_SUFFIX} for ${_PLATFORM}"
-    DEPENDS webrtc-gn
-)
-set(_DEPENDENCIES ${_DEPENDENCIES} webrtc-clang-format)
-
 include(Gn)
 
 libwebrtc_command(
@@ -144,7 +118,13 @@ libwebrtc_command(
     DEPENDS ${_DEPENDENCIES}
 )
 
-set(_NINJA_COMMAND ninja ${NINJA_ARGS} -C ${_NINJA_BUILD_DIR} webrtc system_wrappers_default)
+if (WIN32)
+  set(_NINJA_EXECUTABLE ninja.bat)
+else (WIN32)
+  set(_NINJA_EXECUTABLE ninja)
+endif (WIN32)
+
+set(_NINJA_COMMAND ${_NINJA_EXECUTABLE} ${NINJA_ARGS} -C ${_NINJA_BUILD_DIR} webrtc system_wrappers:system_wrappers system_wrappers:field_trial system_wrappers:metrics)
 
 if (BUILD_TESTS)
   set(_NINJA_COMMAND ${_NINJA_COMMAND} webrtc_tests)
